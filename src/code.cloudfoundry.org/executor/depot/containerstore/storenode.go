@@ -310,7 +310,8 @@ func (n *storeNode) Create(logger lager.Logger, traceID string) error {
 func (n *storeNode) mountVolumes(logger lager.Logger, info executor.Container) ([]garden.BindMount, error) {
 	gardenMounts := []garden.BindMount{}
 	for _, volume := range info.VolumeMounts {
-		hostMount, err := n.volumeManager.Mount(logger, volume.Driver, volume.VolumeId, info.Guid, volume.Config)
+		config := injectWorkloadIdentity(volume.Config, info)
+		hostMount, err := n.volumeManager.Mount(logger, volume.Driver, volume.VolumeId, info.Guid, config)
 		if err != nil {
 			return nil, err
 		}
@@ -323,6 +324,41 @@ func (n *storeNode) mountVolumes(logger lager.Logger, info executor.Container) (
 			})
 	}
 	return gardenMounts, nil
+}
+
+// injectWorkloadIdentity returns a copy of the volume mount config enriched
+// with the identity of the workload the volume is being mounted for, which
+// Rep already knows from the container tags. Volume drivers that validate a
+// mount against the workload's service bindings can read these keys directly
+// instead of reconstructing the identity out-of-band.
+//
+// Keys added (underscore-prefixed to distinguish them from broker config):
+//
+//	_workload_guid: process_guid (LRP) or task_guid (Task)
+//	_workload_type: "lrp" or "task"
+//
+// Containers without a lifecycle tag are returned unchanged.
+func injectWorkloadIdentity(config map[string]interface{}, info executor.Container) map[string]interface{} {
+	lifecycle, ok := info.Tags["lifecycle"]
+	if !ok {
+		return config
+	}
+
+	enriched := make(map[string]interface{}, len(config)+2)
+	for k, v := range config {
+		enriched[k] = v
+	}
+
+	switch lifecycle {
+	case "lrp":
+		enriched["_workload_guid"] = info.Tags["process-guid"]
+		enriched["_workload_type"] = "lrp"
+	case "task":
+		enriched["_workload_guid"] = info.Guid
+		enriched["_workload_type"] = "task"
+	}
+
+	return enriched
 }
 
 func (n *storeNode) gardenProperties(container *executor.Container) (garden.Properties, error) {

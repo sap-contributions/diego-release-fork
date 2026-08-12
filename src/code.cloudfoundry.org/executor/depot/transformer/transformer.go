@@ -71,8 +71,6 @@ type transformer struct {
 
 	postSetupHook []string
 	postSetupUser string
-
-	enableDropletCaching bool
 }
 
 type Option func(*transformer)
@@ -119,12 +117,6 @@ func WithPostSetupHook(user string, hook []string) Option {
 func WithDeclarativeHealthcheckFailureMetrics() Option {
 	return func(t *transformer) {
 		t.emitHealthCheckMetrics = true
-	}
-}
-
-func WithEnableDropletCaching(enableDropletCaching bool) Option {
-	return func(t *transformer) {
-		t.enableDropletCaching = enableDropletCaching
 	}
 }
 
@@ -200,7 +192,6 @@ func (t *transformer) stepFor(
 			t.downloadLimiter,
 			logStreamer.WithSource(actionModel.LogSource),
 			logger,
-			t.enableDropletCaching,
 		)
 
 	case *models.UploadAction:

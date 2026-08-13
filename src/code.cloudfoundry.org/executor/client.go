@@ -27,6 +27,7 @@ type Client interface {
 	Healthy(lager.Logger) bool
 	SetHealthy(lager.Logger, bool)
 	Cleanup(lager.Logger)
+	ReclaimCacheSpace(logger lager.Logger)
 }
 
 //go:generate counterfeiter -o fakes/fake_event_source.go . EventSource

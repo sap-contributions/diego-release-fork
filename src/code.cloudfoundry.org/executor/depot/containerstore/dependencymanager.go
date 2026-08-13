@@ -1,6 +1,7 @@
 package containerstore
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"sync"
@@ -20,6 +21,7 @@ import (
 type DependencyManager interface {
 	DownloadCachedDependencies(logger lager.Logger, mounts []executor.CachedDependency, logconfig models.LogConfig, metronClient loggingclient.IngressClient) (BindMounts, error)
 	ReleaseCachedDependencies(logger lager.Logger, keys []BindMountCacheKey) error
+	ReclaimCacheSpace(logger lager.Logger)
 	Stop(logger lager.Logger)
 }
 
@@ -39,6 +41,10 @@ func (bm *dependencyManager) Stop(logger lager.Logger) {
 	if err != nil {
 		logger.Error("failed-saving-cache-state", err, lager.Data{"err": err})
 	}
+}
+
+func (bm *dependencyManager) ReclaimCacheSpace(logger lager.Logger) {
+	bm.cache.MakeRoom(logger)
 }
 
 func (bm *dependencyManager) DownloadCachedDependencies(logger lager.Logger, mounts []executor.CachedDependency, logConfig models.LogConfig, metronClient loggingclient.IngressClient) (BindMounts, error) {
@@ -86,7 +92,14 @@ func (bm *dependencyManager) DownloadCachedDependencies(logger lager.Logger, mou
 		case err := <-errChan:
 			close(cancelChan)
 			wg.Wait()
-			return bindMounts, err
+			for {
+				select {
+				case cachedMount := <-mountChan:
+					bindMounts.AddBindMount(cachedMount.CacheKey, cachedMount.BindMount)
+				default:
+					return bindMounts, err
+				}
+			}
 		case cachedMount := <-mountChan:
 			bindMounts.AddBindMount(cachedMount.CacheKey, cachedMount.BindMount)
 			completed++
@@ -164,16 +177,17 @@ func (bm *dependencyManager) downloadCachedDependency(logger lager.Logger, mount
 }
 
 func (bm *dependencyManager) ReleaseCachedDependencies(logger lager.Logger, keys []BindMountCacheKey) error {
+	var errs error
 	for i := range keys {
 		key := &keys[i]
 		logger.Debug("releasing-cache-key", lager.Data{"cache-key": key.CacheKey, "dir": key.Dir})
 		err := bm.cache.CloseDirectory(logger, key.CacheKey, key.Dir)
 		if err != nil && err != cacheddownloader.AlreadyClosed && err != cacheddownloader.EntryNotFound {
 			logger.Error("failed-releasing-cache-key", err, lager.Data{"cache-key": key.CacheKey, "dir": key.Dir})
-			return err
+			errs = errors.Join(errs, err)
 		}
 	}
-	return nil
+	return errs
 }
 
 type cachedBindMount struct {

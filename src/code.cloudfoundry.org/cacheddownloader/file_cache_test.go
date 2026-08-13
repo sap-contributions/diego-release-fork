@@ -877,6 +877,43 @@ var _ = Describe("FileCache", func() {
 				Expect(cache.CloseDirectory(logger, cacheKey, dir2)).To(Succeed())
 			})
 		})
+
+		Context("when extraction fails", func() {
+			var corruptFile *os.File
+
+			BeforeEach(func() {
+				corruptFile = createFile("corrupt-archive", "not a valid tar content")
+				rc, err := cache.Add(logger, cacheKey, corruptFile.Name(), fileSize, cacheInfo)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(rc.Close()).To(Succeed())
+			})
+
+			AfterEach(func() {
+				os.RemoveAll(corruptFile.Name())
+			})
+
+			It("cleans up partial directory, resets ExpandedDirectoryPath, and allows subsequent retry to succeed", func() {
+				_, _, err := cache.GetDirectory(logger, cacheKey)
+				Expect(err).To(HaveOccurred())
+
+				entry := cache.Entries[cacheKey]
+				Expect(entry).NotTo(BeNil())
+				Expect(entry.ExpandedDirectoryPath).To(BeEmpty())
+				Expect(entry.FilePath + ".d").NotTo(BeAnExistingFile())
+
+				validArchive := createArchive("valid-archive", "valid content")
+				defer os.RemoveAll(validArchive.Name())
+
+				validData, err := os.ReadFile(validArchive.Name())
+				Expect(err).NotTo(HaveOccurred())
+				Expect(os.WriteFile(entry.FilePath, validData, 0600)).To(Succeed())
+
+				dir, _, err := cache.GetDirectory(logger, cacheKey)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dir).To(BeADirectory())
+				Expect(recursiveList(dir)).To(ContainElement("/testdir/file.txt"))
+			})
+		})
 	})
 
 	Describe("makeRoom partition free-space eviction", func() {
@@ -1023,6 +1060,55 @@ var _ = Describe("FileCache", func() {
 					cache.CloseDirectory(logger, cacheKey, dir)
 					Expect(filenamesInDir(cacheDir)).To(HaveLen(0))
 				})
+			})
+		})
+	})
+
+	Describe("CloseDirectory", func() {
+		Context("when closing an entry in OldEntries", func() {
+			var (
+				cacheKey   string
+				fileSize   int64
+				cacheInfo  cacheddownloader.CachingInfoType
+				dir1, dir2 string
+				a1, a2     *os.File
+			)
+
+			BeforeEach(func() {
+				cacheKey = "old-entries-key"
+				fileSize = 100
+				cacheInfo = cacheddownloader.CachingInfoType{}
+
+				a1 = createArchive("cache-test-file1", "content1")
+				a2 = createArchive("cache-test-file2", "content2")
+
+				var err error
+				dir1, err = cache.AddDirectory(logger, cacheKey, a1.Name(), fileSize, cacheInfo)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Increase directoryInUseCount to 2 so replacement won't decrement count to 0
+				_, _, err = cache.GetDirectory(logger, cacheKey)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Replacing the entry moves dir1 to OldEntries with directoryInUseCount = 1
+				cacheInfo.LastModified = "new-mod"
+				dir2, err = cache.AddDirectory(logger, cacheKey, a2.Name(), fileSize, cacheInfo)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				os.RemoveAll(a1.Name())
+				os.RemoveAll(a2.Name())
+				cache.CloseDirectory(logger, cacheKey, dir2)
+			})
+
+			It("deletes the entry's expanded directory from disk when it becomes unused", func() {
+				Expect(dir1).To(BeADirectory())
+
+				err := cache.CloseDirectory(logger, cacheKey, dir1)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(dir1).NotTo(BeAnExistingFile())
 			})
 		})
 	})

@@ -36,6 +36,7 @@ import (
 	"code.cloudfoundry.org/operationq"
 	"code.cloudfoundry.org/rep"
 	"code.cloudfoundry.org/rep/auctioncellrep"
+	"code.cloudfoundry.org/rep/cachecleanup"
 	"code.cloudfoundry.org/rep/cmd/rep/config"
 	"code.cloudfoundry.org/rep/diskcheck"
 	"code.cloudfoundry.org/rep/evacuation"
@@ -50,6 +51,8 @@ import (
 	"github.com/tedsuo/ifrit/sigmon"
 	"github.com/tedsuo/rata"
 )
+
+const cacheCleanupInterval = 1 * time.Minute
 
 var configFilePath = flag.String(
 	"config",
@@ -247,6 +250,7 @@ func main() {
 		{Name: "event-consumer", Runner: harmonizer.NewEventConsumer(logger, opGenerator, queue)},
 		{Name: "evacuator", Runner: evacuator},
 		{Name: "request-metrics-notifier", Runner: requestMetrics},
+		{Name: "cache-cleanup", Runner: cachecleanup.NewRunner(logger, clock, cacheCleanupInterval, executorClient)},
 	}
 
 	members = append(executorMembers, members...)

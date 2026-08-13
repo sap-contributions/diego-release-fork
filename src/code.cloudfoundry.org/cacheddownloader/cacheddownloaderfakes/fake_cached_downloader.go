@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/cacheddownloader"
-	"code.cloudfoundry.org/lager/v3"
+	lager "code.cloudfoundry.org/lager/v3"
 )
 
 type FakeCachedDownloader struct {
@@ -61,6 +61,11 @@ type FakeCachedDownloader struct {
 		result1 string
 		result2 int64
 		result3 error
+	}
+	MakeRoomStub        func(lager.Logger)
+	makeRoomMutex       sync.RWMutex
+	makeRoomArgsForCall []struct {
+		arg1 lager.Logger
 	}
 	RecoverStateStub        func(lager.Logger) error
 	recoverStateMutex       sync.RWMutex
@@ -293,6 +298,38 @@ func (fake *FakeCachedDownloader) FetchAsDirectoryReturnsOnCall(i int, result1 s
 	}{result1, result2, result3}
 }
 
+func (fake *FakeCachedDownloader) MakeRoom(arg1 lager.Logger) {
+	fake.makeRoomMutex.Lock()
+	fake.makeRoomArgsForCall = append(fake.makeRoomArgsForCall, struct {
+		arg1 lager.Logger
+	}{arg1})
+	stub := fake.MakeRoomStub
+	fake.recordInvocation("MakeRoom", []interface{}{arg1})
+	fake.makeRoomMutex.Unlock()
+	if stub != nil {
+		fake.MakeRoomStub(arg1)
+	}
+}
+
+func (fake *FakeCachedDownloader) MakeRoomCallCount() int {
+	fake.makeRoomMutex.RLock()
+	defer fake.makeRoomMutex.RUnlock()
+	return len(fake.makeRoomArgsForCall)
+}
+
+func (fake *FakeCachedDownloader) MakeRoomCalls(stub func(lager.Logger)) {
+	fake.makeRoomMutex.Lock()
+	defer fake.makeRoomMutex.Unlock()
+	fake.MakeRoomStub = stub
+}
+
+func (fake *FakeCachedDownloader) MakeRoomArgsForCall(i int) lager.Logger {
+	fake.makeRoomMutex.RLock()
+	defer fake.makeRoomMutex.RUnlock()
+	argsForCall := fake.makeRoomArgsForCall[i]
+	return argsForCall.arg1
+}
+
 func (fake *FakeCachedDownloader) RecoverState(arg1 lager.Logger) error {
 	fake.recoverStateMutex.Lock()
 	ret, specificReturn := fake.recoverStateReturnsOnCall[len(fake.recoverStateArgsForCall)]
@@ -418,16 +455,6 @@ func (fake *FakeCachedDownloader) SaveStateReturnsOnCall(i int, result1 error) {
 func (fake *FakeCachedDownloader) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.closeDirectoryMutex.RLock()
-	defer fake.closeDirectoryMutex.RUnlock()
-	fake.fetchMutex.RLock()
-	defer fake.fetchMutex.RUnlock()
-	fake.fetchAsDirectoryMutex.RLock()
-	defer fake.fetchAsDirectoryMutex.RUnlock()
-	fake.recoverStateMutex.RLock()
-	defer fake.recoverStateMutex.RUnlock()
-	fake.saveStateMutex.RLock()
-	defer fake.saveStateMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

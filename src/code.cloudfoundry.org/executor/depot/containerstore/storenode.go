@@ -207,6 +207,7 @@ func (n *storeNode) Create(logger lager.Logger, traceID string) error {
 	createContainer := func() error {
 		mounts, err := n.dependencyManager.DownloadCachedDependencies(logger, info.CachedDependencies, info.LogConfig, n.metronClient)
 		if err != nil {
+			n.dependencyManager.ReleaseCachedDependencies(logger, mounts.CacheKeys)
 			n.complete(logger, traceID, true, DownloadCachedDependenciesFailed, true)
 			return err
 		}

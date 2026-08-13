@@ -66,6 +66,10 @@ func (c *client) Cleanup(logger lager.Logger) {
 	c.containerStore.Cleanup(logger)
 }
 
+func (c *client) ReclaimCacheSpace(logger lager.Logger) {
+	c.containerStore.ReclaimCacheSpace(logger)
+}
+
 func (c *client) AllocateContainers(logger lager.Logger, traceID string, requests []executor.AllocationRequest) []executor.AllocationFailure {
 	logger = logger.Session("allocate-containers")
 	failures := make([]executor.AllocationFailure, 0)

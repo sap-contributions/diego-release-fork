@@ -967,6 +967,28 @@ var _ = Describe("Container Store", func() {
 					Expect(container.RunResult.FailureReason).To(Equal(containerstore.DownloadCachedDependenciesFailed))
 					Expect(container.RunResult.Retryable).To(BeTrue())
 				})
+
+				Context("when partial bind mounts are returned with the error", func() {
+					var partialMounts containerstore.BindMounts
+
+					BeforeEach(func() {
+						partialMounts = containerstore.BindMounts{
+							CacheKeys: []containerstore.BindMountCacheKey{
+								{CacheKey: "key-1", Dir: "dir-1"},
+							},
+						}
+						dependencyManager.DownloadCachedDependenciesReturns(partialMounts, errors.New("partial download failure"))
+					})
+
+					It("releases the partial cache keys", func() {
+						_, err := containerStore.Create(logger, "some-trace-id", containerGuid)
+						Expect(err).To(HaveOccurred())
+
+						Expect(dependencyManager.ReleaseCachedDependenciesCallCount()).To(Equal(1))
+						_, keys := dependencyManager.ReleaseCachedDependenciesArgsForCall(0)
+						Expect(keys).To(Equal(partialMounts.CacheKeys))
+					})
+				})
 			})
 
 			Context("when egress rules are requested", func() {
@@ -3769,6 +3791,14 @@ var _ = Describe("Container Store", func() {
 				clock.Increment(30 * time.Millisecond)
 				Eventually(logger).Should(gbytes.Say("failed-to-destroy-container"))
 			})
+		})
+	})
+
+	Describe("ReclaimCacheSpace", func() {
+		It("delegates to the dependency manager", func() {
+			containerStore.ReclaimCacheSpace(logger)
+			Expect(dependencyManager.ReclaimCacheSpaceCallCount()).To(Equal(1))
+			Expect(dependencyManager.ReclaimCacheSpaceArgsForCall(0)).To(Equal(logger))
 		})
 	})
 })

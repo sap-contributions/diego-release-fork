@@ -28,6 +28,11 @@ type FakeDependencyManager struct {
 		result1 containerstore.BindMounts
 		result2 error
 	}
+	ReclaimCacheSpaceStub        func(lager.Logger)
+	reclaimCacheSpaceMutex       sync.RWMutex
+	reclaimCacheSpaceArgsForCall []struct {
+		arg1 lager.Logger
+	}
 	ReleaseCachedDependenciesStub        func(lager.Logger, []containerstore.BindMountCacheKey) error
 	releaseCachedDependenciesMutex       sync.RWMutex
 	releaseCachedDependenciesArgsForCall []struct {
@@ -119,6 +124,38 @@ func (fake *FakeDependencyManager) DownloadCachedDependenciesReturnsOnCall(i int
 		result1 containerstore.BindMounts
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeDependencyManager) ReclaimCacheSpace(arg1 lager.Logger) {
+	fake.reclaimCacheSpaceMutex.Lock()
+	fake.reclaimCacheSpaceArgsForCall = append(fake.reclaimCacheSpaceArgsForCall, struct {
+		arg1 lager.Logger
+	}{arg1})
+	stub := fake.ReclaimCacheSpaceStub
+	fake.recordInvocation("ReclaimCacheSpace", []interface{}{arg1})
+	fake.reclaimCacheSpaceMutex.Unlock()
+	if stub != nil {
+		fake.ReclaimCacheSpaceStub(arg1)
+	}
+}
+
+func (fake *FakeDependencyManager) ReclaimCacheSpaceCallCount() int {
+	fake.reclaimCacheSpaceMutex.RLock()
+	defer fake.reclaimCacheSpaceMutex.RUnlock()
+	return len(fake.reclaimCacheSpaceArgsForCall)
+}
+
+func (fake *FakeDependencyManager) ReclaimCacheSpaceCalls(stub func(lager.Logger)) {
+	fake.reclaimCacheSpaceMutex.Lock()
+	defer fake.reclaimCacheSpaceMutex.Unlock()
+	fake.ReclaimCacheSpaceStub = stub
+}
+
+func (fake *FakeDependencyManager) ReclaimCacheSpaceArgsForCall(i int) lager.Logger {
+	fake.reclaimCacheSpaceMutex.RLock()
+	defer fake.reclaimCacheSpaceMutex.RUnlock()
+	argsForCall := fake.reclaimCacheSpaceArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeDependencyManager) ReleaseCachedDependencies(arg1 lager.Logger, arg2 []containerstore.BindMountCacheKey) error {

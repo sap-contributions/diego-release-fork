@@ -183,6 +183,8 @@ func (e *FileCacheEntry) expandedDirectory() (string, error) {
 		e.ExpandedDirectoryPath = e.FilePath + ".d"
 		err := extractTarToDirectory(e.FilePath, e.ExpandedDirectoryPath)
 		if err != nil {
+			os.RemoveAll(e.ExpandedDirectoryPath)
+			e.ExpandedDirectoryPath = ""
 			return "", err
 		}
 
@@ -228,6 +230,20 @@ func (c *FileCache) CloseDirectory(logger lager.Logger, cacheKey, dirPath string
 
 	entry.decrementDirectoryInUseCount()
 	if !entry.inUse() {
+		if entry.ExpandedDirectoryPath != "" {
+			err := os.RemoveAll(entry.ExpandedDirectoryPath)
+			if err != nil {
+				logger.Error("failed-deleting-cached-directory", err, lager.Data{"dir": entry.ExpandedDirectoryPath})
+			}
+			entry.ExpandedDirectoryPath = ""
+		}
+		if entry.FilePath != "" {
+			err := os.RemoveAll(entry.FilePath)
+			if err != nil {
+				logger.Error("failed-deleting-cached-file", err, lager.Data{"file": entry.FilePath})
+			}
+			entry.FilePath = ""
+		}
 		// done with this old entry, so clean it up
 		delete(c.OldEntries, cacheKey+dirPath)
 	}
@@ -385,6 +401,13 @@ func (c *FileCache) updateOldEntries(logger lager.Logger, cacheKey string, entry
 			delete(c.OldEntries, cacheKey+entry.ExpandedDirectoryPath)
 		}
 	}
+}
+
+func (c *FileCache) MakeRoom(logger lager.Logger) {
+	lock.Lock()
+	defer lock.Unlock()
+
+	c.makeRoom(logger, 0, "")
 }
 
 func (c *FileCache) makeRoom(logger lager.Logger, size int64, excludedCacheKey string) {

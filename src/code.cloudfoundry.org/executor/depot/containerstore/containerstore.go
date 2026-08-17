@@ -47,6 +47,8 @@ type ContainerStore interface {
 
 	// shutdown the dependency manager
 	Cleanup(logger lager.Logger)
+
+	ReclaimCacheSpace(logger lager.Logger)
 }
 
 type ContainerConfig struct {
@@ -141,6 +143,10 @@ func New(
 
 func (cs *containerStore) Cleanup(logger lager.Logger) {
 	cs.dependencyManager.Stop(logger)
+}
+
+func (cs *containerStore) ReclaimCacheSpace(logger lager.Logger) {
+	cs.dependencyManager.ReclaimCacheSpace(logger)
 }
 
 func (cs *containerStore) Reserve(logger lager.Logger, traceID string, req *executor.AllocationRequest) (executor.Container, error) {

@@ -132,6 +132,11 @@ type FakeContainerStore struct {
 	newRegistryPrunerReturnsOnCall map[int]struct {
 		result1 ifrit.Runner
 	}
+	ReclaimCacheSpaceStub        func(lager.Logger)
+	reclaimCacheSpaceMutex       sync.RWMutex
+	reclaimCacheSpaceArgsForCall []struct {
+		arg1 lager.Logger
+	}
 	RemainingResourcesStub        func(lager.Logger) executor.ExecutorResources
 	remainingResourcesMutex       sync.RWMutex
 	remainingResourcesArgsForCall []struct {
@@ -799,6 +804,38 @@ func (fake *FakeContainerStore) NewRegistryPrunerReturnsOnCall(i int, result1 if
 	fake.newRegistryPrunerReturnsOnCall[i] = struct {
 		result1 ifrit.Runner
 	}{result1}
+}
+
+func (fake *FakeContainerStore) ReclaimCacheSpace(arg1 lager.Logger) {
+	fake.reclaimCacheSpaceMutex.Lock()
+	fake.reclaimCacheSpaceArgsForCall = append(fake.reclaimCacheSpaceArgsForCall, struct {
+		arg1 lager.Logger
+	}{arg1})
+	stub := fake.ReclaimCacheSpaceStub
+	fake.recordInvocation("ReclaimCacheSpace", []interface{}{arg1})
+	fake.reclaimCacheSpaceMutex.Unlock()
+	if stub != nil {
+		fake.ReclaimCacheSpaceStub(arg1)
+	}
+}
+
+func (fake *FakeContainerStore) ReclaimCacheSpaceCallCount() int {
+	fake.reclaimCacheSpaceMutex.RLock()
+	defer fake.reclaimCacheSpaceMutex.RUnlock()
+	return len(fake.reclaimCacheSpaceArgsForCall)
+}
+
+func (fake *FakeContainerStore) ReclaimCacheSpaceCalls(stub func(lager.Logger)) {
+	fake.reclaimCacheSpaceMutex.Lock()
+	defer fake.reclaimCacheSpaceMutex.Unlock()
+	fake.ReclaimCacheSpaceStub = stub
+}
+
+func (fake *FakeContainerStore) ReclaimCacheSpaceArgsForCall(i int) lager.Logger {
+	fake.reclaimCacheSpaceMutex.RLock()
+	defer fake.reclaimCacheSpaceMutex.RUnlock()
+	argsForCall := fake.reclaimCacheSpaceArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeContainerStore) RemainingResources(arg1 lager.Logger) executor.ExecutorResources {

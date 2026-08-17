@@ -91,3 +91,4 @@ docs/superpowers
 .bash-guard
 
 _rocket-agent/
+.worktrees/

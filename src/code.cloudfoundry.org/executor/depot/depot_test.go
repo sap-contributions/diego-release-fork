@@ -795,6 +795,14 @@ var _ = Describe("Depot", func() {
 			})
 		})
 	})
+
+	Describe("ReclaimCacheSpace", func() {
+		It("delegates to the container store", func() {
+			depotClient.ReclaimCacheSpace(logger)
+			Expect(containerStore.ReclaimCacheSpaceCallCount()).To(Equal(1))
+			Expect(containerStore.ReclaimCacheSpaceArgsForCall(0)).To(Equal(logger))
+		})
+	})
 })
 
 func newAllocationRequest(guid string, tagses ...executor.Tags) executor.AllocationRequest {

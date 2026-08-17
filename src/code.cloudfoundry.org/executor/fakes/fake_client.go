@@ -118,6 +118,11 @@ type FakeClient struct {
 	pingReturnsOnCall map[int]struct {
 		result1 error
 	}
+	ReclaimCacheSpaceStub        func(lager.Logger)
+	reclaimCacheSpaceMutex       sync.RWMutex
+	reclaimCacheSpaceArgsForCall []struct {
+		arg1 lager.Logger
+	}
 	RemainingResourcesStub        func(lager.Logger) (executor.ExecutorResources, error)
 	remainingResourcesMutex       sync.RWMutex
 	remainingResourcesArgsForCall []struct {
@@ -760,6 +765,38 @@ func (fake *FakeClient) PingReturnsOnCall(i int, result1 error) {
 	fake.pingReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeClient) ReclaimCacheSpace(arg1 lager.Logger) {
+	fake.reclaimCacheSpaceMutex.Lock()
+	fake.reclaimCacheSpaceArgsForCall = append(fake.reclaimCacheSpaceArgsForCall, struct {
+		arg1 lager.Logger
+	}{arg1})
+	stub := fake.ReclaimCacheSpaceStub
+	fake.recordInvocation("ReclaimCacheSpace", []interface{}{arg1})
+	fake.reclaimCacheSpaceMutex.Unlock()
+	if stub != nil {
+		fake.ReclaimCacheSpaceStub(arg1)
+	}
+}
+
+func (fake *FakeClient) ReclaimCacheSpaceCallCount() int {
+	fake.reclaimCacheSpaceMutex.RLock()
+	defer fake.reclaimCacheSpaceMutex.RUnlock()
+	return len(fake.reclaimCacheSpaceArgsForCall)
+}
+
+func (fake *FakeClient) ReclaimCacheSpaceCalls(stub func(lager.Logger)) {
+	fake.reclaimCacheSpaceMutex.Lock()
+	defer fake.reclaimCacheSpaceMutex.Unlock()
+	fake.ReclaimCacheSpaceStub = stub
+}
+
+func (fake *FakeClient) ReclaimCacheSpaceArgsForCall(i int) lager.Logger {
+	fake.reclaimCacheSpaceMutex.RLock()
+	defer fake.reclaimCacheSpaceMutex.RUnlock()
+	argsForCall := fake.reclaimCacheSpaceArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClient) RemainingResources(arg1 lager.Logger) (executor.ExecutorResources, error) {

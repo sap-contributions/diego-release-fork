@@ -47,6 +47,9 @@ type CachedDownloader interface {
 	// RecoverState checks to see if a state file exists (from a previous SaveState call), and restores
 	// the cache state from that information if such a file exists. This should be called on startup.
 	RecoverState(logger lager.Logger) error
+
+	// MakeRoom attempts to evict unused cache entries to bring the cache under budget.
+	MakeRoom(logger lager.Logger)
 }
 
 func NoopTransform(source, destination string) (int64, error) {
@@ -200,6 +203,10 @@ func (c *cachedDownloader) RecoverState(logger lager.Logger) error {
 	}
 
 	return err
+}
+
+func (c *cachedDownloader) MakeRoom(logger lager.Logger) {
+	c.cache.MakeRoom(logger)
 }
 
 func (c *cachedDownloader) CloseDirectory(logger lager.Logger, cacheKey, directoryPath string) error {

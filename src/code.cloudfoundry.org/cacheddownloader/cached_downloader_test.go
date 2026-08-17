@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -1203,6 +1204,46 @@ var _ = Describe("File cache", func() {
 			Expect(err).NotTo(HaveOccurred())
 			saveStateFile := filepath.Join(cachedPath, "saved_cache.json")
 			Expect(saveStateFile).To(BeARegularFile())
+		})
+	})
+
+	Describe("MakeRoom", func() {
+		BeforeEach(func() {
+			fileContent := []byte("a file with lots of content")
+			returnedHeader := http.Header{}
+			returnedHeader.Set("ETag", "some-etag")
+
+			server.AppendHandlers(ghttp.CombineHandlers(
+				ghttp.VerifyRequest("GET", "/file_to_evict"),
+				ghttp.RespondWith(http.StatusOK, string(fileContent), returnedHeader),
+			))
+
+			fileUrl, err := Url.Parse(server.URL() + "/file_to_evict")
+			Expect(err).NotTo(HaveOccurred())
+
+			file, _, err := cachedDownloader.Fetch(logger, fileUrl, "evictable-cache-key", checksum, cancelChan)
+			Expect(err).NotTo(HaveOccurred())
+			file.Close()
+
+			expectCacheToHaveNEntries(cachedPath, 1)
+
+			saveStateFile := filepath.Join(cachedPath, "saved_cache.json")
+			Expect(cachedDownloader.SaveState(logger)).To(Succeed())
+
+			cache = cacheddownloader.NewCache(cachedPath, 1, 0)
+			stateFile, err := os.Open(saveStateFile)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(json.NewDecoder(stateFile).Decode(cache)).To(Succeed())
+			stateFile.Close()
+			Expect(os.Remove(saveStateFile)).To(Succeed())
+
+			cachedDownloader, err = cacheddownloader.New(downloader, cache, transformer)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("evicts old unused entries from the cache", func() {
+			cachedDownloader.MakeRoom(logger)
+			expectCacheToHaveNEntries(cachedPath, 0)
 		})
 	})
 

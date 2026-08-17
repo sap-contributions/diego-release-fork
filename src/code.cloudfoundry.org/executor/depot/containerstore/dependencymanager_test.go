@@ -76,6 +76,98 @@ var _ = Describe("DependencyManager", func() {
 		})
 	})
 
+	Context("when some dependencies succeed and one fails", func() {
+		type testCase struct {
+			name                 string
+			deps                 []executor.CachedDependency
+			stub                 func(logger lager.Logger, urlToFetch *url.URL, cacheKey string, checksum cacheddownloader.ChecksumInfoType, cancelChan <-chan struct{}) (string, int64, error)
+			expectedCacheKeys    []containerstore.BindMountCacheKey
+			expectedGardenMounts []garden.BindMount
+		}
+
+		DescribeTable("preserves successful cache keys in returned BindMounts even when an error occurs",
+			func(tc testCase) {
+				downloadRateLimiter = make(chan struct{}, len(tc.deps))
+				dependencyManager = containerstore.NewDependencyManager(cache, downloadRateLimiter)
+				cache.FetchAsDirectoryStub = tc.stub
+
+				bindMounts, err := dependencyManager.DownloadCachedDependencies(logger, tc.deps, logConfig, fakeClient)
+				Expect(err).To(HaveOccurred())
+				Expect(bindMounts.CacheKeys).To(ConsistOf(tc.expectedCacheKeys))
+				Expect(bindMounts.GardenBindMounts).To(ConsistOf(tc.expectedGardenMounts))
+			},
+			Entry("when a dependency succeeds before another fails", testCase{
+				name: "early success",
+				deps: []executor.CachedDependency{
+					{CacheKey: "cache-key-success-1", From: "http://example.com/1", To: "/var/data/1"},
+					{CacheKey: "cache-key-fail", From: "http://example.com/fail", To: "/var/data/fail"},
+				},
+				stub: func(_ lager.Logger, _ *url.URL, cacheKey string, _ cacheddownloader.ChecksumInfoType, _ <-chan struct{}) (string, int64, error) {
+					if cacheKey == "cache-key-success-1" {
+						return "/tmp/download/1", 100, nil
+					}
+					time.Sleep(50 * time.Millisecond)
+					return "", 0, errors.New("download-failed")
+				},
+				expectedCacheKeys: []containerstore.BindMountCacheKey{
+					{CacheKey: "cache-key-success-1", Dir: "/tmp/download/1"},
+				},
+				expectedGardenMounts: []garden.BindMount{
+					{SrcPath: "/tmp/download/1", DstPath: "/var/data/1", Mode: garden.BindMountModeRO, Origin: garden.BindMountOriginHost},
+				},
+			}),
+			Entry("when a dependency succeeds after another fails (during wg.Wait)", testCase{
+				name: "late success during cancel",
+				deps: []executor.CachedDependency{
+					{CacheKey: "cache-key-fail", From: "http://example.com/fail", To: "/var/data/fail"},
+					{CacheKey: "cache-key-success-late", From: "http://example.com/late", To: "/var/data/late"},
+				},
+				stub: func(_ lager.Logger, _ *url.URL, cacheKey string, _ cacheddownloader.ChecksumInfoType, _ <-chan struct{}) (string, int64, error) {
+					if cacheKey == "cache-key-fail" {
+						return "", 0, errors.New("download-failed-immediately")
+					}
+					time.Sleep(50 * time.Millisecond)
+					return "/tmp/download/late", 200, nil
+				},
+				expectedCacheKeys: []containerstore.BindMountCacheKey{
+					{CacheKey: "cache-key-success-late", Dir: "/tmp/download/late"},
+				},
+				expectedGardenMounts: []garden.BindMount{
+					{SrcPath: "/tmp/download/late", DstPath: "/var/data/late", Mode: garden.BindMountModeRO, Origin: garden.BindMountOriginHost},
+				},
+			}),
+			Entry("when multiple dependencies succeed and one fails", testCase{
+				name: "multiple successes",
+				deps: []executor.CachedDependency{
+					{CacheKey: "cache-key-1", From: "http://example.com/1", To: "/var/data/1"},
+					{CacheKey: "cache-key-fail", From: "http://example.com/fail", To: "/var/data/fail"},
+					{CacheKey: "cache-key-2", From: "http://example.com/2", To: "/var/data/2"},
+				},
+				stub: func(_ lager.Logger, _ *url.URL, cacheKey string, _ cacheddownloader.ChecksumInfoType, _ <-chan struct{}) (string, int64, error) {
+					switch cacheKey {
+					case "cache-key-1":
+						return "/tmp/download/1", 100, nil
+					case "cache-key-2":
+						time.Sleep(50 * time.Millisecond)
+						return "/tmp/download/2", 200, nil
+					case "cache-key-fail":
+						time.Sleep(10 * time.Millisecond)
+						return "", 0, errors.New("download-failed")
+					}
+					return "", 0, errors.New("unknown")
+				},
+				expectedCacheKeys: []containerstore.BindMountCacheKey{
+					{CacheKey: "cache-key-1", Dir: "/tmp/download/1"},
+					{CacheKey: "cache-key-2", Dir: "/tmp/download/2"},
+				},
+				expectedGardenMounts: []garden.BindMount{
+					{SrcPath: "/tmp/download/1", DstPath: "/var/data/1", Mode: garden.BindMountModeRO, Origin: garden.BindMountOriginHost},
+					{SrcPath: "/tmp/download/2", DstPath: "/var/data/2", Mode: garden.BindMountModeRO, Origin: garden.BindMountOriginHost},
+				},
+			}),
+		)
+	})
+
 	Context("when fetching all of the dependencies succeeds", func() {
 		var bindMounts containerstore.BindMounts
 
@@ -280,6 +372,14 @@ var _ = Describe("DependencyManager", func() {
 			})
 			Expect(err).To(HaveOccurred())
 			Expect(cache.CloseDirectoryCallCount()).To(Equal(1))
+		})
+	})
+
+	Context("ReclaimCacheSpace", func() {
+		It("calls MakeRoom on the downloader cache", func() {
+			dependencyManager.ReclaimCacheSpace(logger)
+			Expect(cache.MakeRoomCallCount()).To(Equal(1))
+			Expect(cache.MakeRoomArgsForCall(0)).To(Equal(logger))
 		})
 	})
 })

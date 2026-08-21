@@ -3,6 +3,8 @@ module code.cloudfoundry.org
 go 1.26.6
 
 replace (
+	// pin ifrit until https://github.com/tedsuo/ifrit/pull/48 is merged
+	github.com/tedsuo/ifrit => github.com/tedsuo/ifrit v0.0.0-20260418191334-846868129986
 	code.cloudfoundry.org/garden => ../garden
 	code.cloudfoundry.org/grootfs => ../grootfs
 	code.cloudfoundry.org/guardian => ../guardian
@@ -73,7 +75,7 @@ require (
 	github.com/pkg/sftp v1.13.11
 	github.com/spf13/cobra v1.10.2
 	github.com/square/certstrap v1.3.0
-	github.com/tedsuo/ifrit v0.0.0-20260813155221-94822c932811
+	github.com/tedsuo/ifrit v0.0.0-20260418191334-846868129986
 	github.com/tedsuo/rata v1.0.0
 	github.com/vito/go-sse v1.1.3
 	golang.org/x/crypto v0.55.0

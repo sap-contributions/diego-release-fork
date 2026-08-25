@@ -137,7 +137,7 @@ code.cloudfoundry.org/goshims/filepathshim
 code.cloudfoundry.org/goshims/http_wrap
 code.cloudfoundry.org/goshims/osshim
 code.cloudfoundry.org/goshims/osshim/os_fake
-# code.cloudfoundry.org/guardian v0.0.0-20260818152501-8ea7fb3095cb => ../guardian
+# code.cloudfoundry.org/guardian v0.0.0-20260820194234-c2d9348cfdee => ../guardian
 ## explicit; go 1.26.3
 code.cloudfoundry.org/guardian/gardener
 code.cloudfoundry.org/guardian/gardener/container-spec
@@ -160,7 +160,7 @@ code.cloudfoundry.org/lager/v3/lagertest
 # code.cloudfoundry.org/localip v0.85.0
 ## explicit; go 1.25.0
 code.cloudfoundry.org/localip
-# code.cloudfoundry.org/locket v1.7.0
+# code.cloudfoundry.org/locket v1.9.0
 ## explicit; go 1.26.0
 code.cloudfoundry.org/locket
 code.cloudfoundry.org/locket/cmd/locket
@@ -179,7 +179,7 @@ code.cloudfoundry.org/locket/metrics/helpers
 code.cloudfoundry.org/locket/metrics/helpers/helpersfakes
 code.cloudfoundry.org/locket/models
 code.cloudfoundry.org/locket/models/modelsfakes
-# code.cloudfoundry.org/routing-api v0.11.0
+# code.cloudfoundry.org/routing-api v0.12.0
 ## explicit; go 1.26.4
 code.cloudfoundry.org/routing-api
 code.cloudfoundry.org/routing-api/admin
@@ -362,7 +362,7 @@ github.com/aws/aws-sdk-go-v2/service/ssooidc/types
 github.com/aws/aws-sdk-go-v2/service/sts
 github.com/aws/aws-sdk-go-v2/service/sts/internal/endpoints
 github.com/aws/aws-sdk-go-v2/service/sts/types
-# github.com/aws/smithy-go v1.27.8
+# github.com/aws/smithy-go v1.27.9
 ## explicit; go 1.24
 github.com/aws/smithy-go
 github.com/aws/smithy-go/auth
@@ -402,7 +402,7 @@ github.com/awslabs/amazon-ecr-credential-helper/ecr-login/version
 # github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f
 ## explicit
 github.com/bmizerany/pat
-# github.com/buildpacks/imgutil v0.0.0-20260715132717-40ca3490b49e
+# github.com/buildpacks/imgutil v0.0.0-20260824214648-e09626c50080
 ## explicit; go 1.24.0
 github.com/buildpacks/imgutil
 github.com/buildpacks/imgutil/layer
@@ -410,7 +410,7 @@ github.com/buildpacks/imgutil/layout
 github.com/buildpacks/imgutil/layout/sparse
 github.com/buildpacks/imgutil/local
 github.com/buildpacks/imgutil/remote
-# github.com/buildpacks/lifecycle v0.21.17
+# github.com/buildpacks/lifecycle v0.21.18
 ## explicit; go 1.26.6
 github.com/buildpacks/lifecycle/api
 github.com/buildpacks/lifecycle/archive
@@ -745,7 +745,7 @@ github.com/google/go-containerregistry/pkg/v1/validate
 github.com/google/go-tpm/legacy/tpm2
 github.com/google/go-tpm/tpmutil
 github.com/google/go-tpm/tpmutil/tbs
-# github.com/google/pprof v0.0.0-20260802141513-ef3492d7dac3
+# github.com/google/pprof v0.0.0-20260825002013-8a176773c324
 ## explicit; go 1.25.0
 github.com/google/pprof/profile
 # github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510

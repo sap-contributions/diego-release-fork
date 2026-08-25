@@ -32,11 +32,11 @@ require (
 	code.cloudfoundry.org/garden v0.0.0-20260814181737-66902029982f
 	code.cloudfoundry.org/go-loggregator/v9 v9.2.1
 	code.cloudfoundry.org/goshims v0.110.0
-	code.cloudfoundry.org/guardian v0.0.0-20260818152501-8ea7fb3095cb
+	code.cloudfoundry.org/guardian v0.0.0-20260820194234-c2d9348cfdee
 	code.cloudfoundry.org/lager/v3 v3.82.0
 	code.cloudfoundry.org/localip v0.85.0
-	code.cloudfoundry.org/locket v1.7.0
-	code.cloudfoundry.org/routing-api v0.11.0
+	code.cloudfoundry.org/locket v1.9.0
+	code.cloudfoundry.org/routing-api v0.12.0
 	code.cloudfoundry.org/routing-info v1.10.0
 	code.cloudfoundry.org/tlsconfig v0.65.0
 	github.com/GaryBoone/GoStats v0.0.0-20130122001700-1993eafbef57
@@ -121,10 +121,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.33.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.38.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.45.7 // indirect
-	github.com/aws/smithy-go v1.27.8 // indirect
+	github.com/aws/smithy-go v1.27.9 // indirect
 	github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f // indirect
-	github.com/buildpacks/imgutil v0.0.0-20260715132717-40ca3490b49e // indirect
-	github.com/buildpacks/lifecycle v0.21.17 // indirect
+	github.com/buildpacks/imgutil v0.0.0-20260824214648-e09626c50080 // indirect
+	github.com/buildpacks/lifecycle v0.21.18 // indirect
 	github.com/buildpacks/pack v0.40.9 // indirect
 	github.com/cactus/go-statsd-client v3.2.1+incompatible // indirect
 	github.com/chrismellard/docker-credential-acr-env v0.0.0-20230304212654-82a0ddb27589 // indirect
@@ -162,7 +162,7 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-containerregistry v0.21.9 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
-	github.com/google/pprof v0.0.0-20260802141513-ef3492d7dac3 // indirect
+	github.com/google/pprof v0.0.0-20260825002013-8a176773c324 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect

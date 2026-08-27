@@ -850,6 +850,48 @@ var _ = Describe("Container Store", func() {
 					Expect(gardenClient.CreateArgsForCall(0).BindMounts).To(ContainElement(expectedBindMount2))
 				})
 
+				Context("when the container carries an LRP lifecycle tag", func() {
+					BeforeEach(func() {
+						runReq.Tags = executor.Tags{
+							"lifecycle":    "lrp",
+							"process-guid": "app-guid-123",
+						}
+					})
+
+					It("forwards the workload identity to the volume manager on mount", func() {
+						_, err := containerStore.Create(logger, "some-trace-id", containerGuid)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(volumeManager.MountCallCount()).To(Equal(2))
+
+						_, _, _, _, config := volumeManager.MountArgsForCall(0)
+						Expect(config["_workload_guid"]).To(Equal("app-guid-123"))
+						Expect(config["_workload_type"]).To(Equal("lrp"))
+						Expect(config["some-config"]).To(Equal("interface"))
+
+						_, _, _, _, config = volumeManager.MountArgsForCall(1)
+						Expect(config["_workload_guid"]).To(Equal("app-guid-123"))
+						Expect(config["_workload_type"]).To(Equal("lrp"))
+					})
+				})
+
+				Context("when the container carries a Task lifecycle tag", func() {
+					BeforeEach(func() {
+						runReq.Tags = executor.Tags{
+							"lifecycle": "task",
+						}
+					})
+
+					It("forwards the task guid as the workload identity on mount", func() {
+						_, err := containerStore.Create(logger, "some-trace-id", containerGuid)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(volumeManager.MountCallCount()).To(Equal(2))
+
+						_, _, _, _, config := volumeManager.MountArgsForCall(0)
+						Expect(config["_workload_guid"]).To(Equal(containerGuid))
+						Expect(config["_workload_type"]).To(Equal("task"))
+					})
+				})
+
 				Context("when it errors on mount", func() {
 					Context("when the driver returns a safeError", func() {
 						BeforeEach(func() {

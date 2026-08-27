@@ -82,6 +82,31 @@ var _ = Describe("injectWorkloadIdentity", func() {
 		})
 	})
 
+	Context("when the lifecycle tag has an unrecognized value", func() {
+		BeforeEach(func() {
+			container = executor.Container{
+				Guid: "some-guid",
+				Tags: executor.Tags{
+					"lifecycle": "other",
+				},
+			}
+		})
+
+		It("injects no identity keys and preserves the existing config", func() {
+			result := injectWorkloadIdentity(baseConfig, container)
+			Expect(result).NotTo(HaveKey("_workload_guid"))
+			Expect(result).NotTo(HaveKey("_workload_type"))
+			Expect(result["source"]).To(Equal("nfs://10.0.0.1/share"))
+			Expect(result["mount-endpoint"]).To(Equal("https://fss.example.com"))
+		})
+
+		It("does not mutate the original config map", func() {
+			injectWorkloadIdentity(baseConfig, container)
+			Expect(baseConfig).NotTo(HaveKey("_workload_guid"))
+			Expect(baseConfig).NotTo(HaveKey("_workload_type"))
+		})
+	})
+
 	Context("when config is nil", func() {
 		It("returns a new map with identity keys for LRPs", func() {
 			container = executor.Container{

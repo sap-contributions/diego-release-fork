@@ -853,8 +853,8 @@ var _ = Describe("Container Store", func() {
 				Context("when the container carries an LRP lifecycle tag", func() {
 					BeforeEach(func() {
 						runReq.Tags = executor.Tags{
-							"lifecycle":    "lrp",
-							"process-guid": "app-guid-123",
+							executor.LifecycleTag:   executor.LRPLifecycle,
+							executor.ProcessGuidTag: "app-guid-123",
 						}
 					})
 
@@ -864,20 +864,21 @@ var _ = Describe("Container Store", func() {
 						Expect(volumeManager.MountCallCount()).To(Equal(2))
 
 						_, _, _, _, config := volumeManager.MountArgsForCall(0)
-						Expect(config["_workload_guid"]).To(Equal("app-guid-123"))
-						Expect(config["_workload_type"]).To(Equal("lrp"))
+						Expect(config[executor.WorkloadGuidKey]).To(Equal("app-guid-123"))
+						Expect(config[executor.WorkloadTypeKey]).To(Equal(executor.LRPLifecycle))
 						Expect(config["some-config"]).To(Equal("interface"))
 
 						_, _, _, _, config = volumeManager.MountArgsForCall(1)
-						Expect(config["_workload_guid"]).To(Equal("app-guid-123"))
-						Expect(config["_workload_type"]).To(Equal("lrp"))
+						Expect(config[executor.WorkloadGuidKey]).To(Equal("app-guid-123"))
+						Expect(config[executor.WorkloadTypeKey]).To(Equal(executor.LRPLifecycle))
+						Expect(config["some-config"]).To(Equal("interface"))
 					})
 				})
 
 				Context("when the container carries a Task lifecycle tag", func() {
 					BeforeEach(func() {
 						runReq.Tags = executor.Tags{
-							"lifecycle": "task",
+							executor.LifecycleTag: executor.TaskLifecycle,
 						}
 					})
 
@@ -887,8 +888,14 @@ var _ = Describe("Container Store", func() {
 						Expect(volumeManager.MountCallCount()).To(Equal(2))
 
 						_, _, _, _, config := volumeManager.MountArgsForCall(0)
-						Expect(config["_workload_guid"]).To(Equal(containerGuid))
-						Expect(config["_workload_type"]).To(Equal("task"))
+						Expect(config[executor.WorkloadGuidKey]).To(Equal(containerGuid))
+						Expect(config[executor.WorkloadTypeKey]).To(Equal(executor.TaskLifecycle))
+						Expect(config["some-config"]).To(Equal("interface"))
+
+						_, _, _, _, config = volumeManager.MountArgsForCall(1)
+						Expect(config[executor.WorkloadGuidKey]).To(Equal(containerGuid))
+						Expect(config[executor.WorkloadTypeKey]).To(Equal(executor.TaskLifecycle))
+						Expect(config["some-config"]).To(Equal("interface"))
 					})
 				})
 

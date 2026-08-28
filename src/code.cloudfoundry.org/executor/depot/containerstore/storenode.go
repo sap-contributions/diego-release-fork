@@ -337,10 +337,22 @@ func (n *storeNode) mountVolumes(logger lager.Logger, info executor.Container) (
 //	_workload_guid: process_guid (LRP) or task_guid (Task)
 //	_workload_type: "lrp" or "task"
 //
-// Containers without a lifecycle tag are returned unchanged.
+// Containers without a recognized lifecycle tag, or without a resolvable
+// workload GUID, are returned unchanged (the original map, which may be nil).
 func injectWorkloadIdentity(config map[string]interface{}, info executor.Container) map[string]interface{} {
-	lifecycle, ok := info.Tags["lifecycle"]
-	if !ok {
+	var workloadGuid, workloadType string
+	switch info.Tags[executor.LifecycleTag] {
+	case executor.LRPLifecycle:
+		workloadGuid, workloadType = info.Tags[executor.ProcessGuidTag], executor.LRPLifecycle
+	case executor.TaskLifecycle:
+		workloadGuid, workloadType = info.Guid, executor.TaskLifecycle
+	default:
+		// No lifecycle tag, or an unrecognized value: nothing to inject.
+		return config
+	}
+
+	if workloadGuid == "" {
+		// Nothing authoritative to forward; leave the config untouched.
 		return config
 	}
 
@@ -348,15 +360,8 @@ func injectWorkloadIdentity(config map[string]interface{}, info executor.Contain
 	for k, v := range config {
 		enriched[k] = v
 	}
-
-	switch lifecycle {
-	case "lrp":
-		enriched["_workload_guid"] = info.Tags["process-guid"]
-		enriched["_workload_type"] = "lrp"
-	case "task":
-		enriched["_workload_guid"] = info.Guid
-		enriched["_workload_type"] = "task"
-	}
+	enriched[executor.WorkloadGuidKey] = workloadGuid
+	enriched[executor.WorkloadTypeKey] = workloadType
 
 	return enriched
 }

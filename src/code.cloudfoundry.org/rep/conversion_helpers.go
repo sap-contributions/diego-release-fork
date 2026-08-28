@@ -16,14 +16,17 @@ import (
 )
 
 const (
-	LifecycleTag  = "lifecycle"
+	// Tag keys and lifecycle values shared with the executor, which consumes
+	// them (e.g. on the volume-mount path). Aliased to the executor
+	// definitions so there is a single source of truth.
+	LifecycleTag  = executor.LifecycleTag
 	ResultFileTag = "result-file"
 	DomainTag     = "domain"
 
-	TaskLifecycle = "task"
-	LRPLifecycle  = "lrp"
+	TaskLifecycle = executor.TaskLifecycle
+	LRPLifecycle  = executor.LRPLifecycle
 
-	ProcessGuidTag  = "process-guid"
+	ProcessGuidTag  = executor.ProcessGuidTag
 	InstanceGuidTag = "instance-guid"
 	ProcessIndexTag = "process-index"
 

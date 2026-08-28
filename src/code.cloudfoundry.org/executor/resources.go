@@ -314,6 +314,26 @@ func (r *ExecutorResources) Add(res *Resource) {
 
 type Tags map[string]string
 
+// Container tag keys and lifecycle values shared between the components that
+// produce the tags (rep) and those that consume them (e.g. the executor's
+// volume-mount path). Defined here, in the layer rep already depends on, so
+// there is a single source of truth without an import cycle.
+const (
+	LifecycleTag   = "lifecycle"
+	ProcessGuidTag = "process-guid"
+
+	LRPLifecycle  = "lrp"
+	TaskLifecycle = "task"
+)
+
+// Keys injected into a volume mount config to forward the workload identity to
+// the volume driver. Underscore-prefixed to distinguish them from
+// broker-supplied config.
+const (
+	WorkloadGuidKey = "_workload_guid"
+	WorkloadTypeKey = "_workload_type"
+)
+
 func (t Tags) Copy() Tags {
 	if t == nil {
 		return nil
